@@ -76,9 +76,3 @@ for col in wnv_false_unique:
     false_percent[col] = ((float(falsecount)/float(totalcount))*100)
 twmerge.Cool.unique()
 wnv_false_unique['Cool']
-
-false_percent
-
-spray = pd.read_csv('./assets/spray.csv')
-
-spray.columns

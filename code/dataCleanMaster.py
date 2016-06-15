@@ -118,8 +118,8 @@ train.shape
 train = pd.merge(train,weather,on=['Date','Station'])
 test = pd.merge(test,weather,on=['Date','Station'])
 
-train.isnull().sum()
-
+# train.to_csv('trainComb.csv', ecnoding='utf-8', index=False)
+# test.to_csv('testComb.csv', ecnoding='utf-8', index=False)
 
 ##### MODELING
 from sklearn.cross_validation import train_test_split
@@ -159,3 +159,27 @@ print lda_roc_auc
 print lda_acs
 print lda_cm
 print lda_cr
+
+# Random Forest
+
+from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier(class_weight='balanced', n_jobs=-1)
+rfmod = rf.fit(X_train,y_train)
+rf_ypred = rfmod.predict(X_test)
+rf_yprobs = rfmod.predict_proba(X_test)
+
+
+rf_acs = metrics.accuracy_score(y_test,rf_ypred)
+rf_cm = metrics.confusion_matrix(y_test,rf_ypred)
+rf_cr = metrics.classification_report(y_test,rf_ypred)
+
+false_positive_rate, true_positive_rate, thresholds = metrics.roc_curve(y_test, rf_yprobs[:,1])
+rf_roc_auc = metrics.auc(false_positive_rate, true_positive_rate)
+
+print rf_roc_auc
+
+print rf_acs
+print rf_cm
+
+print rf_cr
