@@ -41,12 +41,14 @@ train['Date'] = pd.to_datetime(train['Date'])
 train = train.drop(['Address', 'Block', 'Street', 'AddressNumberAndStreet'], axis=1)
 train.Species = LabelEncoder().fit_transform(train.Species)
 train.Trap = LabelEncoder().fit_transform(train.Trap)
+train['Week'] = train.Date.dt.weekofyear
 
 
 test['Date'] = pd.to_datetime(test['Date'])
 test = test.drop(['Address', 'Block', 'Street', 'AddressNumberAndStreet'], axis=1)
 test.Species = LabelEncoder().fit_transform(test.Species)
 test.Trap = LabelEncoder().fit_transform(test.Trap)
+test['Week'] = test.Date.dt.weekofyear
 
 # spray
 spray.Date = pd.to_datetime(spray.Date)
@@ -115,3 +117,45 @@ train.shape
 # Merge train and weather on date and station.
 train = pd.merge(train,weather,on=['Date','Station'])
 test = pd.merge(test,weather,on=['Date','Station'])
+
+train.isnull().sum()
+
+
+##### MODELING
+from sklearn.cross_validation import train_test_split
+from sklearn import metrics
+
+train.columns
+
+feature_cols =  ['Species','NumMosquitos','Week','Station','Tmax','Tmin','Tavg','DewPoint',
+                'SeaLevel','ResultSpeed','ResultDir','AvgSpeed']
+
+X = train[feature_cols]
+y = train['WnvPresent']
+
+
+X_train,X_test,y_train,y_test = train_test_split(X,y, test_size=0.3)
+
+
+
+# LDA
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+
+lda_classifier = LDA(n_components=4)
+ldamod = lda_classifier.fit(X_train, y_train)
+lda_ypred = ldamod.predict(X_test)
+lda_yprobs =ldamod.predict_proba(X_test)
+
+lda_acs = metrics.accuracy_score(y_test,lda_ypred)
+lda_cm = metrics.confusion_matrix(y_test,lda_ypred)
+lda_cr = metrics.classification_report(y_test,lda_ypred)
+
+false_positive_rate, true_positive_rate, thresholds = metrics.roc_curve(y_test, lda_yprobs[:,1])
+lda_roc_auc = metrics.auc(false_positive_rate, true_positive_rate)
+
+print lda_roc_auc
+
+print lda_acs
+print lda_cm
+print lda_cr
