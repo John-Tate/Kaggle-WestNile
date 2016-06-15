@@ -133,7 +133,6 @@ feature_cols =  ['Species','NumMosquitos','Week','Station','Tmax','Tmin','Tavg',
 X = train[feature_cols]
 y = train['WnvPresent']
 
-
 X_train,X_test,y_train,y_test = train_test_split(X,y, test_size=0.3)
 
 
