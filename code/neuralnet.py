@@ -10,6 +10,23 @@ from sklearn.cross_validation import KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.cross_validation import train_test_split
 
+def annModel(inputD,outputD):
+    model = Sequential()
+
+    model.add(Dense(32, input_dim=inputD))
+    model.add(Activation('tanh'))
+    model.add(Dropout(0.2))
+
+    model.add(Dense(32))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+
+    model.add(Dense(outputD))
+    model.add(Activation('softmax'))
+
+    model.compile(loss='mean_squared_error', optimizer="adadelta")
+    return model
+
 
 train = pd.read_csv('../assets/trainComb.csv')
 
@@ -26,54 +43,47 @@ y = np.array(y)
 y.shape
 
 
-y = np_utils.to_categorical(y)
+yc = np_utils.to_categorical(y)
 
 scaler = StandardScaler()
 scaler.fit(X)
 X = scaler.transform(X)
 
+# X_train,X_test,y_train,y_test = train_test_split(X,y, test_size=0.3)
 
 
-X_train,X_test,y_train,y_test = train_test_split(X,y, test_size=0.3)
+from sklearn.cross_validation import KFold
+kf = KFold(len(y), n_folds=4 ,shuffle=True, random_state=0)
 
-X_train.shape
+inputD = X_train.shape[1]
+outputD = 2
 
-input_dim = X_train.shape[1]
-output_dim = 2
+inputD
 
-# model = Sequential()
-#
-# model.add(Dense(16,input_dim=X_train.shape[1]))
-# model.add(Activation('relu'))
-#
-# model.add(Dense(output_dim=1))
-# model.add(Activation("softmax"))
-#
-# model.compile(loss='mse', optimizer='sgd', metrics=['accuracy'])
 
-model = Sequential()
-model.add(Dense(32, input_dim=input_dim))
-model.add(Activation('tanh'))
-model.add(Dropout(0.5))
+auc_scores = []
+acc_scores = []
 
-model.add(Dense(32))
-model.add(Activation('tanh'))
-model.add(Dropout(0.5))
+for training, testing in kf:
+    print "Fold"
+    X_train = X[training]
+    X_test = X[testing]
+    y_train = yc[training]
+    y_test = yc[testing]
+    y_true = y[testing]
 
-model.add(Dense(output_dim))
-model.add(Activation('softmax'))
+    model = annModel(inputD,outputD)
+    model.fit(X_train, y_train, nb_epoch=100, batch_size=16, validation_data=(X_test, y_test), verbose=0)
 
-model.compile(loss='mean_squared_error', optimizer="sgd")
+    y_probs = model.predict_proba(X_test)
+    y_pred = model.predict(X_test)
 
-model.fit(X_train, y_train, nb_epoch=100, batch_size=16, validation_data=(X_test, y_test), verbose=1)
+    roc = metrics.roc_auc_score(y_test, y_probs)
+    auc_scores.append(roc)
 
-y_probs = model.predict_proba(X_test, verbose=0)
-y_preds = model.predict(X_test)
+print np.mean(auc_scores)
 
-y_test
+print auc_scores.round(4)
 
-false_positive_rate, true_positive_rate, thresholds = metrics.roc_curve(y_test, y_probs)
-rf_roc_auc = metrics.auc(false_positive_rate, true_positive_rate)
-
-roc = metrics.roc_auc_score(y_test, y_probs)
-print("AUC:", roc)
+for a in auc_scores:
+    print "%.4f" % a
